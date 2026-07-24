@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { commonText, getLocaleFromPathname, withLocale } from "@/lib/i18n";
+import { commonText, withLocale } from "@/lib/i18n";
+import { useLocale } from "@/components/LocaleProvider";
 
 const consentCookie = "sza_cookie_consent";
 
@@ -18,7 +19,7 @@ function hasCookie() {
 
 export function CookieBanner() {
   const pathname = usePathname();
-  const locale = getLocaleFromPathname(pathname);
+  const locale = useLocale();
   const t = commonText[locale];
   const [visible, setVisible] = useState(false);
 

@@ -11,7 +11,7 @@ export function ContentSectionList({
   locale: "cn" | "en";
   excludeIds?: string[];
 }) {
-  const visible = (sections ?? []).filter((section) => !excludeIds.includes(section.id));
+  const visible = (sections ?? []).filter((section) => section.visible !== false && !excludeIds.includes(section.id));
   if (!visible.length) return null;
 
   return (

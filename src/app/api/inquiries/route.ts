@@ -10,7 +10,13 @@ export async function POST(request: NextRequest) {
   const rate=consumeRateLimit(`inquiry:${ip}`,10,60*60_000);
   if(!rate.allowed){
     recordSecurityEvent({type:"inquiry_rate_limited",severity:"warning",ip,detail:"Public inquiry submission limit exceeded."});
-    return NextResponse.json({error:"提交过于频繁，请稍后再试。"},{status:429,headers:{"Retry-After":String(rate.retryAfterSeconds)}});
+    return NextResponse.json(
+      { code: "RATE_LIMITED", error: "提交过于频繁，请稍后再试。" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfterSeconds) },
+      },
+    );
   }
   try {
     const body=await request.json();
@@ -21,7 +27,16 @@ export async function POST(request: NextRequest) {
     const company=cleanText(body.company,200);
     const country=cleanText(body.country,120);
     const projectType=cleanText(body.projectType||"General inquiry",120);
-    if(!name||!validEmail(email)||!message) return NextResponse.json({error:"请填写有效的姓名、邮箱和需求说明。"},{status:400});
+    const privacyConsent=cleanText(body.privacyConsent,24);
+    if(!name||!validEmail(email)||!message||privacyConsent!=="accepted") {
+      return NextResponse.json(
+        {
+          code: "VALIDATION_ERROR",
+          error: "请填写有效的姓名、邮箱和需求说明，并确认隐私政策。",
+        },
+        { status: 400 },
+      );
+    }
 
     const inquiry=createInquiry({name,email,company,country,projectType,message});
     const settings=getSystemSettings() as Record<string,unknown>;
@@ -32,6 +47,9 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({inquiry},{status:201});
   } catch {
-    return NextResponse.json({error:"请求格式不正确。"},{status:400});
+    return NextResponse.json(
+      { code: "INVALID_REQUEST", error: "请求格式不正确。" },
+      { status: 400 },
+    );
   }
 }

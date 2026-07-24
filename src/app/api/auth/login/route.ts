@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminCsrfCookie, adminSessionCookie, createAdminCsrfToken, createAdminSession } from "@/lib/auth-session";
-import { clearLoginFailures, consumeCaptcha, getLoginIpLock, getAdminRole, getSystemSettings, recordLoginFailure, recordSecurityEvent, verifyAdmin } from "@/lib/db";
+import { adminMustChangePassword, clearLoginFailures, consumeCaptcha, getLoginIpLock, getAdminRole, getSystemSettings, recordLoginFailure, recordSecurityEvent, verifyAdmin } from "@/lib/db";
 import { cleanText, getRequestIp, requestOriginAllowed, validEmail } from "@/lib/request-security";
 
 export const runtime = "nodejs";
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const maxAge = 60 * 60 * 8;
     const sessionToken = await createAdminSession(email, getAdminRole(email), maxAge);
     const csrfToken = await createAdminCsrfToken(sessionToken);
-    const response = NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true, mustChangePassword: adminMustChangePassword(email) });
     const secureCookies = request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
     response.cookies.set(adminSessionCookie, sessionToken, { httpOnly: true, sameSite: "lax", secure: secureCookies, path: "/", maxAge });
     response.cookies.set(adminCsrfCookie, csrfToken, { httpOnly: false, sameSite: "strict", secure: secureCookies, path: "/", maxAge });

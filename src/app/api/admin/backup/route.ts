@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { NextRequest, NextResponse } from "next/server";
-import { createDatabaseBackup, getBackupFile, listDatabaseBackups } from "@/lib/backups";
+import { createDatabaseBackup, getBackupFile, listDatabaseBackups, restoreDatabaseBackup } from "@/lib/backups";
 import { getDatabasePath, recordSecurityEvent } from "@/lib/db";
 import { getRequestIp } from "@/lib/request-security";
 
@@ -16,4 +16,13 @@ export async function GET(request:NextRequest){
 export async function POST(request:NextRequest){
   try{const backup=createDatabaseBackup("manual");recordSecurityEvent({type:"database_backup_created",severity:"info",ip:getRequestIp(request),detail:backup.name});return NextResponse.json({backup},{status:201});}
   catch(error){return NextResponse.json({error:error instanceof Error?error.message:"创建备份失败。"},{status:500});}
+}
+export async function PUT(request:NextRequest){
+  try{
+    const body=await request.json();
+    if(body.confirm!=="RESTORE")return NextResponse.json({error:"恢复确认文字不正确。"},{status:400});
+    const backup=restoreDatabaseBackup(String(body.file??""));
+    recordSecurityEvent({type:"database_backup_restored",severity:"critical",ip:getRequestIp(request),detail:String(backup?.name??"")});
+    return NextResponse.json({ok:true,backup});
+  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"恢复备份失败。"},{status:400});}
 }

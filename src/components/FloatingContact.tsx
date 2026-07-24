@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Headphones, Mail, MapPin, Phone, QrCode, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { getLocaleFromPathname } from "@/lib/i18n";
+import { useLocale } from "@/components/LocaleProvider";
 
 type ContactSettings = {
   contactEmail: string;
@@ -46,7 +46,7 @@ function Item({ icon, label, value, href }: { icon: React.ReactNode; label: stri
 
 export function FloatingContact() {
   const pathname = usePathname();
-  const locale = getLocaleFromPathname(pathname);
+  const locale = useLocale();
   const [settings, setSettings] = useState<ContactSettings>(fallback);
   const [open, setOpen] = useState(false);
 

@@ -23,6 +23,7 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult>({ products: [], posts: [] });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -33,12 +34,15 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
     }
 
     setLoading(true);
+    setError(false);
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&locale=${locale}`);
+      if (!res.ok) throw new Error(`Search request failed with ${res.status}`);
       const data = await res.json();
       setResults(data);
     } catch (error) {
       console.error("Search failed:", error);
+      setError(true);
       setResults({ products: [], posts: [] });
     } finally {
       setLoading(false);
@@ -81,7 +85,9 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div
+          <motion.button
+            type="button"
+            aria-label={locale === "cn" ? "关闭搜索" : "Close search"}
             className="fixed inset-0 z-[100] bg-black/25 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -90,6 +96,9 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
             onClick={onClose}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={locale === "cn" ? "站内搜索" : "Site search"}
             className="fixed left-1/2 top-20 z-[101] w-full max-w-3xl -translate-x-1/2"
             initial={{ opacity: 0, y: -20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -104,22 +113,34 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  aria-label={locale === "cn" ? "搜索产品和新闻" : "Search products and news"}
                   placeholder={locale === "cn" ? "搜索产品、新闻..." : "Search products, news..."}
                   className="flex-1 text-base bg-transparent outline-none placeholder:text-[#6e6e73]"
                 />
                 <button
                   type="button"
                   onClick={onClose}
+                  aria-label={locale === "cn" ? "关闭搜索" : "Close search"}
                   className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <X size={18} className="text-[#6e6e73]" />
                 </button>
               </div>
 
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div
+                className="max-h-[60vh] overflow-y-auto"
+                aria-live="polite"
+                aria-busy={loading}
+              >
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                  </div>
+                ) : error ? (
+                  <div className="px-5 py-8 text-center text-sm text-[#b42318]">
+                    {locale === "cn"
+                      ? "搜索暂时不可用，请稍后重试。"
+                      : "Search is temporarily unavailable. Please try again."}
                   </div>
                 ) : query.trim() === "" ? (
                   <div className="px-5 py-8 text-center text-sm text-[#6e6e73]">
@@ -138,12 +159,13 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
                         </p>
                         <div className="space-y-2">
                           {results.products.map((product) => (
-                            <motion.div
+                            <motion.button
+                              type="button"
                               key={product.id}
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.05 }}
-                              className="group flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              className="group flex w-full items-center gap-4 rounded-lg px-3 py-3 text-left hover:bg-gray-50"
                               onClick={() => handleLinkClick(withLocale(`/products/${product.slug}`, locale))}
                             >
                               <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
@@ -160,7 +182,7 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
                                 </p>
                               </div>
                               <ArrowRight size={16} className="text-[#0071e3] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </motion.div>
+                            </motion.button>
                           ))}
                         </div>
                       </div>
@@ -173,12 +195,13 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
                         </p>
                         <div className="space-y-2">
                           {results.posts.map((post) => (
-                            <motion.div
+                            <motion.button
+                              type="button"
                               key={post.id}
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.1 }}
-                              className="group flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              className="group flex w-full items-center gap-4 rounded-lg px-3 py-3 text-left hover:bg-gray-50"
                               onClick={() => handleLinkClick(withLocale(`/news/${post.slug}`, locale))}
                             >
                               <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
@@ -195,7 +218,7 @@ export function SearchModal({ isOpen, onClose, locale }: SearchModalProps) {
                                 </p>
                               </div>
                               <ArrowRight size={16} className="text-[#0071e3] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </motion.div>
+                            </motion.button>
                           ))}
                         </div>
                       </div>

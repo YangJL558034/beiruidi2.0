@@ -4,53 +4,80 @@ import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { BatteryCharging, ChevronRight, Globe2, ShieldCheck, SunMedium, Zap } from "lucide-react";
+import {
+  BatteryCharging,
+  ChevronRight,
+  Globe2,
+  ShieldCheck,
+  SunMedium,
+  Zap,
+} from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ContentSectionList } from "@/components/ContentSectionList";
 import { SiteHeader } from "@/components/SiteHeader";
-import { commonText, getLocaleFromPathname, withLocale } from "@/lib/i18n";
-import { usePathname } from "next/navigation";
+import { commonText, withLocale } from "@/lib/i18n";
+import { useLocale } from "@/components/LocaleProvider";
 import { EditableSection } from "@/components/EditableSection";
 import { PageMedia } from "@/components/PageMedia";
 import { useSiteContent } from "@/hooks/useSiteContent";
+import { MetricsStrip, PageNotice } from "@/components/PageBusinessBlocks";
 import type { LocalizedProduct } from "@/lib/content-types";
 
-const productImages: Record<string, { src: string; alt: string; position?: string }> = {
+const productImages: Record<
+  string,
+  { src: string; alt: string; position?: string }
+> = {
   stackBlue: {
     src: "/products/web/power-stack-blue.webp",
     alt: "SZA POWER compact power banks in blue, orange, and dark finishes",
-    position: "object-[54%_50%] sm:object-center"
+    position: "object-[54%_50%] sm:object-center",
   },
   stackPinkVertical: {
     src: "/products/web/power-stack-pink-vertical.webp",
     alt: "SZA POWER pastel compact power banks stacked on a display surface",
-    position: "object-[54%_66%] sm:object-[50%_62%]"
+    position: "object-[54%_66%] sm:object-[50%_62%]",
   },
   stackOrange: {
     src: "/products/web/power-stack-orange.webp",
     alt: "SZA POWER orange compact power bank stacked above blue and dark units",
-    position: "object-[54%_54%] sm:object-center"
+    position: "object-[54%_54%] sm:object-center",
   },
   stackPink: {
     src: "/products/web/power-stack-pink.webp",
     alt: "SZA POWER pink compact power bank with green and teal finishes behind it",
-    position: "object-[55%_55%] sm:object-center"
+    position: "object-[55%_55%] sm:object-center",
   },
   bankOrange: {
     src: "/products/web/power-bank-orange.webp",
     alt: "SZA POWER orange compact power bank with USB-C port and indicator lights",
-    position: "object-[56%_56%] sm:object-center"
-  }
+    position: "object-[56%_56%] sm:object-center",
+  },
 };
 
-function PosterLink({ children, href, filled = false, onDark = false }: { children: ReactNode; href: string; filled?: boolean; onDark?: boolean }) {
+function PosterLink({
+  children,
+  href,
+  target,
+  filled = false,
+  onDark = false,
+}: {
+  children: ReactNode;
+  href: string;
+  target?: "_self" | "_blank";
+  filled?: boolean;
+  onDark?: boolean;
+}) {
   return (
     <Link
       href={href}
+      target={target}
+      rel={target === "_blank" ? "noopener noreferrer" : undefined}
       className={`inline-flex min-h-11 items-center justify-center rounded-full px-5 text-[17px] font-normal transition ${
         filled
           ? "bg-[#0071e3] text-white hover:bg-[#0077ed]"
-          : onDark ? "border border-[#0071e3] text-[#0071e3] hover:bg-[#0071e3] hover:text-white md:border-white md:text-white md:hover:bg-white md:hover:text-[#1d1d1f]" : "border border-[#0071e3] text-[#0071e3] hover:bg-[#0071e3] hover:text-white"
+          : onDark
+            ? "border border-[#0071e3] text-[#0071e3] hover:bg-[#0071e3] hover:text-white md:border-white md:text-white md:hover:bg-white md:hover:text-[#1d1d1f]"
+            : "border border-[#0071e3] text-[#0071e3] hover:bg-[#0071e3] hover:text-white"
       }`}
     >
       {children}
@@ -95,7 +122,26 @@ function HeroPoster({
   index,
   locale,
 }: {
-  poster: { eyebrow: string; title: string; subtitle: string; theme: string; primary: string; secondary: string; primaryHref: string; secondaryHref: string; visual: string; media?: { type: "image" | "video"; src: string; poster?: string; alt?: string } };
+  poster: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    theme: string;
+    primary: string;
+    secondary: string;
+    primaryHref: string;
+    secondaryHref: string;
+    primaryTarget?: "_self" | "_blank";
+    secondaryTarget?: "_self" | "_blank";
+    visible?: boolean;
+    visual: string;
+    media?: {
+      type: "image" | "video";
+      src: string;
+      poster?: string;
+      alt?: string;
+    };
+  };
   index: number;
   locale: "cn" | "en";
 }) {
@@ -105,10 +151,20 @@ function HeroPoster({
   return (
     <section
       className={`relative mb-5 overflow-hidden text-center md:mb-3 md:min-h-[760px] ${
-        hasMedia ? "bg-white text-[#1d1d1f] md:bg-black md:text-white" : isDark ? "bg-[#1d1d1f] text-white" : "bg-white text-[#1d1d1f]"
+        hasMedia
+          ? "bg-white text-[#1d1d1f] md:bg-black md:text-white"
+          : isDark
+            ? "bg-[#1d1d1f] text-white"
+            : "bg-white text-[#1d1d1f]"
       }`}
     >
-      <EditableSection label={locale === "cn" ? "\u7f16\u8f91\u9996\u9875\u5185\u5bb9" : "Edit home content"} />
+      <EditableSection
+        label={
+          locale === "cn"
+            ? "\u7f16\u8f91\u9996\u9875\u5185\u5bb9"
+            : "Edit home content"
+        }
+      />
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-5 pb-8 pt-12 sm:px-8 md:pb-0 md:pt-[96px]">
         {poster.eyebrow ? (
           <motion.p
@@ -136,7 +192,11 @@ function HeroPoster({
           viewport={{ once: true }}
           transition={{ duration: 0.65, delay: 0.1 + index * 0.04 }}
           className={`mt-3 max-w-[21rem] text-balance text-[16px] leading-[1.45] sm:max-w-3xl sm:text-[22px] sm:leading-[1.3] ${
-            isDark ? "text-white/86" : hasMedia ? "text-[#1d1d1f] md:text-white/90" : "text-[#1d1d1f]"
+            isDark
+              ? "text-white/86"
+              : hasMedia
+                ? "text-[#1d1d1f] md:text-white/90"
+                : "text-[#1d1d1f]"
           }`}
         >
           {poster.subtitle}
@@ -148,11 +208,33 @@ function HeroPoster({
           transition={{ duration: 0.65, delay: 0.16 + index * 0.04 }}
           className="mt-5 flex flex-wrap justify-center gap-3 sm:gap-4"
         >
-          <PosterLink href={withLocale(poster.primaryHref, locale)} filled onDark={hasMedia}>{poster.primary}</PosterLink>
-          <PosterLink href={withLocale(poster.secondaryHref, locale)} onDark={hasMedia}>{poster.secondary}</PosterLink>
+          <PosterLink
+            href={withLocale(poster.primaryHref, locale)}
+            target={poster.primaryTarget}
+            filled
+            onDark={hasMedia}
+          >
+            {poster.primary}
+          </PosterLink>
+          <PosterLink
+            href={withLocale(poster.secondaryHref, locale)}
+            target={poster.secondaryTarget}
+            onDark={hasMedia}
+          >
+            {poster.secondary}
+          </PosterLink>
         </motion.div>
       </div>
-      {hasMedia ? <><div className="relative z-0 h-[340px] w-full sm:h-[440px] md:absolute md:inset-0 md:h-auto"><PageMedia media={poster.media} className="h-full w-full" /></div><div className="absolute inset-0 z-[1] hidden bg-gradient-to-b from-black/60 via-black/10 to-black/70 md:block" /></> : <ProductArtwork variant={poster.visual} />}
+      {hasMedia ? (
+        <>
+          <div className="relative z-0 h-[340px] w-full sm:h-[440px] md:absolute md:inset-0 md:h-auto">
+            <PageMedia media={poster.media} className="h-full w-full" />
+          </div>
+          <div className="absolute inset-0 z-[1] hidden bg-gradient-to-b from-black/60 via-black/10 to-black/70 md:block" />
+        </>
+      ) : (
+        <ProductArtwork variant={poster.visual} />
+      )}
     </section>
   );
 }
@@ -160,9 +242,25 @@ function HeroPoster({
 function PromoTile({
   tile,
   locale,
-  t
+  t,
 }: {
-  tile: { title: string; subtitle: string; icon: typeof Zap; theme: string; visual: string; primary?: string; secondary?: string; primaryHref?: string; secondaryHref?: string; media?: { type: "image" | "video"; src: string; poster?: string; alt?: string } };
+  tile: {
+    title: string;
+    subtitle: string;
+    icon: typeof Zap;
+    theme: string;
+    visual: string;
+    primary?: string;
+    secondary?: string;
+    primaryHref?: string;
+    secondaryHref?: string;
+    media?: {
+      type: "image" | "video";
+      src: string;
+      poster?: string;
+      alt?: string;
+    };
+  };
   locale: "cn" | "en";
   t: Record<string, string>;
 }) {
@@ -175,21 +273,41 @@ function PromoTile({
 
   return (
     <article className={`group flex flex-col overflow-hidden ${background}`}>
-      <div className="order-2 md:order-1">{tile.media?.src ? <PageMedia media={tile.media} className="h-[240px] sm:h-[350px]" /> : <PromoVisual variant={tile.visual} />}</div>
-      <div className={`relative z-10 order-1 flex min-h-[200px] flex-col items-center justify-center px-5 py-8 text-center sm:min-h-[214px] sm:py-10 md:order-2 ${textColor}`}>
+      <div className="order-2 md:order-1">
+        {tile.media?.src ? (
+          <PageMedia media={tile.media} className="h-[240px] sm:h-[350px]" />
+        ) : (
+          <PromoVisual variant={tile.visual} />
+        )}
+      </div>
+      <div
+        className={`relative z-10 order-1 flex min-h-[200px] flex-col items-center justify-center px-5 py-8 text-center sm:min-h-[214px] sm:py-10 md:order-2 ${textColor}`}
+      >
         <div className="mb-2 flex items-center gap-2 text-[18px] font-semibold sm:text-[19px]">
           <Icon size={23} strokeWidth={1.8} />
           {tile.title}
         </div>
-        <p className={`max-w-md text-balance text-[16px] leading-[1.35] sm:text-[18px] ${mutedColor}`}>
+        <p
+          className={`max-w-md text-balance text-[16px] leading-[1.35] sm:text-[18px] ${mutedColor}`}
+        >
           {tile.subtitle}
         </p>
         <div className="mt-4 flex justify-center gap-6 text-[17px]">
-          <Link href={withLocale(tile.primaryHref || `/products/${tile.visual === "bankOrange" ? "orange-edition" : tile.visual === "stackPinkVertical" ? "pastel-stack" : "blue-titanium"}`, locale)} className={`inline-flex items-center ${linkColor} hover:underline`}>
+          <Link
+            href={withLocale(
+              tile.primaryHref ||
+                `/products/${tile.visual === "bankOrange" ? "orange-edition" : tile.visual === "stackPinkVertical" ? "pastel-stack" : "blue-titanium"}`,
+              locale,
+            )}
+            className={`inline-flex items-center ${linkColor} hover:underline`}
+          >
             {tile.primary || t.learnMore}
             <ChevronRight size={16} />
           </Link>
-          <Link href={withLocale(tile.secondaryHref || "/contact", locale)} className={`inline-flex items-center ${linkColor} hover:underline`}>
+          <Link
+            href={withLocale(tile.secondaryHref || "/contact", locale)}
+            className={`inline-flex items-center ${linkColor} hover:underline`}
+          >
             {tile.secondary || t.buy}
             <ChevronRight size={16} />
           </Link>
@@ -199,27 +317,41 @@ function PromoTile({
   );
 }
 export default function HomePage() {
-  const pathname = usePathname();
-  const locale = getLocaleFromPathname(pathname);
+  const locale = useLocale();
   const t = commonText[locale];
   const siteContent = useSiteContent(locale);
-  const [homepageProducts, setHomepageProducts] = useState<LocalizedProduct[]>([]);
+  const [homepageProducts, setHomepageProducts] = useState<LocalizedProduct[]>(
+    [],
+  );
 
   useEffect(() => {
     let active = true;
     const loadProducts = () => {
       fetch(`/api/products?locale=${locale}`, { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : { products: [] })
-        .then((data) => { if (active) setHomepageProducts(Array.isArray(data.products) ? data.products.slice(0, 6) : []); })
+        .then((response) => (response.ok ? response.json() : { products: [] }))
+        .then((data) => {
+          if (active)
+            setHomepageProducts(
+              Array.isArray(data.products) ? data.products.slice(0, 6) : [],
+            );
+        })
         .catch(() => undefined);
     };
     loadProducts();
     window.addEventListener("focus", loadProducts);
-    return () => { active = false; window.removeEventListener("focus", loadProducts); };
+    return () => {
+      active = false;
+      window.removeEventListener("focus", loadProducts);
+    };
   }, [locale]);
   const homeEyebrow = siteContent.home.eyebrow || "";
-  const homeSubtitle = siteContent.home.subtitle || (locale === "cn" ? "\u53e3\u888b\u5c3a\u5bf8\uff0c\u968f\u8eab\u7535\u529b\uff0c\u7cbe\u6e5b\u5de5\u827a\u3002" : "Pocket-size power. Polished for every day.");
-  const homeSection = (id:string) => siteContent.home.sections?.find((section) => section.id === id);
+  const homeSubtitle =
+    siteContent.home.subtitle ||
+    (locale === "cn"
+      ? "\u53e3\u888b\u5c3a\u5bf8\uff0c\u968f\u8eab\u7535\u529b\uff0c\u7cbe\u6e5b\u5de5\u827a\u3002"
+      : "Pocket-size power. Polished for every day.");
+  const homeSection = (id: string) =>
+    siteContent.home.sections?.find((section) => section.id === id);
 
   const heroPosters = [
     {
@@ -231,8 +363,11 @@ export default function HomePage() {
       secondary: siteContent.home.secondaryLabel || t.viewAll,
       primaryHref: siteContent.home.primaryHref || "/products/blue-titanium",
       secondaryHref: siteContent.home.secondaryHref || "/products",
+      primaryTarget: siteContent.home.primaryTarget,
+      secondaryTarget: siteContent.home.secondaryTarget,
       visual: "stackBlue",
-      media: siteContent.home.media
+      media: siteContent.home.media,
+      visible: true,
     },
     {
       eyebrow: homeSection("hero-color")?.eyebrow || t.colorSeriesEyebrow,
@@ -241,10 +376,14 @@ export default function HomePage() {
       theme: "soft",
       primary: homeSection("hero-color")?.primaryLabel || t.learnMore,
       secondary: homeSection("hero-color")?.secondaryLabel || t.buy,
-      primaryHref: homeSection("hero-color")?.primaryHref || "/products/pastel-stack",
+      primaryHref:
+        homeSection("hero-color")?.primaryHref || "/products/pastel-stack",
       secondaryHref: homeSection("hero-color")?.secondaryHref || "/contact",
+      primaryTarget: homeSection("hero-color")?.primaryTarget,
+      secondaryTarget: homeSection("hero-color")?.secondaryTarget,
       visual: "stackPink",
-      media: homeSection("hero-color")?.media
+      media: homeSection("hero-color")?.media,
+      visible: homeSection("hero-color")?.visible !== false,
     },
     {
       eyebrow: homeSection("hero-orange")?.eyebrow || t.orangeEditionEyebrow,
@@ -253,48 +392,111 @@ export default function HomePage() {
       theme: "soft",
       primary: homeSection("hero-orange")?.primaryLabel || t.learnMore,
       secondary: homeSection("hero-orange")?.secondaryLabel || t.contactSales,
-      primaryHref: homeSection("hero-orange")?.primaryHref || "/products/orange-edition",
+      primaryHref:
+        homeSection("hero-orange")?.primaryHref || "/products/orange-edition",
       secondaryHref: homeSection("hero-orange")?.secondaryHref || "/contact",
+      primaryTarget: homeSection("hero-orange")?.primaryTarget,
+      secondaryTarget: homeSection("hero-orange")?.secondaryTarget,
       visual: "bankOrange",
-      media: homeSection("hero-orange")?.media
-    }
+      media: homeSection("hero-orange")?.media,
+      visible: homeSection("hero-orange")?.visible !== false,
+    },
   ];
 
   const promoTiles = [
-    { id:"promo-blue", title:homeSection("promo-blue")?.title || t.blueTitanium, subtitle:homeSection("promo-blue")?.subtitle || t.blueTitaniumSubtitle, icon:Zap, theme:"light", visual:"stackBlue" },
-    { id:"promo-pastel", title:homeSection("promo-pastel")?.title || t.pastelStack, subtitle:homeSection("promo-pastel")?.subtitle || t.pastelStackSubtitle, icon:BatteryCharging, theme:"light", visual:"stackPinkVertical" },
-    { id:"promo-orange", title:homeSection("promo-orange")?.title || t.orange, subtitle:homeSection("promo-orange")?.subtitle || t.orangeSubtitle, icon:SunMedium, theme:"sun", visual:"stackOrange" },
-    { id:"promo-rose", title:homeSection("promo-rose")?.title || t.rose, subtitle:homeSection("promo-rose")?.subtitle || t.roseSubtitle, icon:ShieldCheck, theme:"light", visual:"stackPink" },
-    { id:"promo-usb", title:homeSection("promo-usb")?.title || t.usbCReady, subtitle:homeSection("promo-usb")?.subtitle || t.usbCReadySubtitle, icon:Globe2, theme:"blue", visual:"bankOrange" },
-    { id:"promo-multi", title:homeSection("promo-multi")?.title || t.multiColor, subtitle:homeSection("promo-multi")?.subtitle || t.multiColorSubtitle, icon:BatteryCharging, theme:"light", visual:"stackBlue" }
+    {
+      id: "promo-blue",
+      title: homeSection("promo-blue")?.title || t.blueTitanium,
+      subtitle: homeSection("promo-blue")?.subtitle || t.blueTitaniumSubtitle,
+      icon: Zap,
+      theme: "light",
+      visual: "stackBlue",
+    },
+    {
+      id: "promo-pastel",
+      title: homeSection("promo-pastel")?.title || t.pastelStack,
+      subtitle: homeSection("promo-pastel")?.subtitle || t.pastelStackSubtitle,
+      icon: BatteryCharging,
+      theme: "light",
+      visual: "stackPinkVertical",
+    },
+    {
+      id: "promo-orange",
+      title: homeSection("promo-orange")?.title || t.orange,
+      subtitle: homeSection("promo-orange")?.subtitle || t.orangeSubtitle,
+      icon: SunMedium,
+      theme: "sun",
+      visual: "stackOrange",
+    },
+    {
+      id: "promo-rose",
+      title: homeSection("promo-rose")?.title || t.rose,
+      subtitle: homeSection("promo-rose")?.subtitle || t.roseSubtitle,
+      icon: ShieldCheck,
+      theme: "light",
+      visual: "stackPink",
+    },
+    {
+      id: "promo-usb",
+      title: homeSection("promo-usb")?.title || t.usbCReady,
+      subtitle: homeSection("promo-usb")?.subtitle || t.usbCReadySubtitle,
+      icon: Globe2,
+      theme: "blue",
+      visual: "bankOrange",
+    },
+    {
+      id: "promo-multi",
+      title: homeSection("promo-multi")?.title || t.multiColor,
+      subtitle: homeSection("promo-multi")?.subtitle || t.multiColorSubtitle,
+      icon: BatteryCharging,
+      theme: "light",
+      visual: "stackBlue",
+    },
   ].map((tile) => ({
     ...tile,
     media: homeSection(tile.id)?.media,
     primary: homeSection(tile.id)?.primaryLabel,
     primaryHref: homeSection(tile.id)?.primaryHref,
     secondary: homeSection(tile.id)?.secondaryLabel,
-    secondaryHref: homeSection(tile.id)?.secondaryHref
+    secondaryHref: homeSection(tile.id)?.secondaryHref,
   }));
 
-  const productTiles = homepageProducts.length ? homepageProducts.slice(0, 6).map((product, index) => ({
-    id: `product-${product.id}`,
-    title: product.name,
-    subtitle: product.subtitle,
-    icon: [Zap, BatteryCharging, SunMedium, ShieldCheck, Globe2, BatteryCharging][index % 6],
-    theme: "light",
-    visual: "stackBlue",
-    media: product.image ? { type: "image" as const, src: product.image, alt: product.name } : undefined,
-    primary: t.learnMore,
-    primaryHref: `/products/${product.slug}`,
-    secondary: t.buy,
-    secondaryHref: "/contact"
-  })) : promoTiles.slice(0, 6);
+  const productTiles = homepageProducts.length
+    ? homepageProducts.slice(0, 6).map((product, index) => ({
+        id: `product-${product.id}`,
+        title: product.name,
+        subtitle: product.subtitle,
+        icon: [
+          Zap,
+          BatteryCharging,
+          SunMedium,
+          ShieldCheck,
+          Globe2,
+          BatteryCharging,
+        ][index % 6],
+        theme: "light",
+        visual: "stackBlue",
+        media: product.image
+          ? { type: "image" as const, src: product.image, alt: product.name }
+          : undefined,
+        primary: t.learnMore,
+        primaryHref: `/products/${product.slug}`,
+        secondary: t.buy,
+        secondaryHref: "/contact",
+      }))
+    : promoTiles.slice(0, 6);
   return (
     <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f]">
       <SiteHeader />
+      <PageNotice content={siteContent.home} />
 
-      {heroPosters.map((poster, index) => (
-        <HeroPoster key={poster.title} poster={poster} index={index} locale={locale} />
+      {heroPosters.filter((poster) => poster.visible !== false).map((poster, index) => (
+        <HeroPoster
+          key={poster.title}
+          poster={poster}
+          index={index}
+          locale={locale}
+        />
       ))}
 
       <section className="grid gap-5 px-0 pb-5 sm:gap-3 sm:px-3 sm:pb-3 md:grid-cols-2">
@@ -303,7 +505,80 @@ export default function HomePage() {
         ))}
       </section>
 
-      <ContentSectionList sections={siteContent.home.sections} locale={locale} excludeIds={["hero-color","hero-orange","promo-blue","promo-pastel","promo-orange","promo-rose","promo-usb","promo-multi"]} />
+      <section className="bg-white px-5 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-sm font-semibold text-[#0071e3]">
+            {locale === "cn" ? "商业合作" : "Business cooperation"}
+          </p>
+          <h2 className="mt-2 max-w-3xl text-balance text-3xl font-semibold sm:text-5xl">
+            {locale === "cn"
+              ? "更快找到适合你的产品与合作入口。"
+              : "Find the right product and cooperation path faster."}
+          </h2>
+          <div className="mt-9 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                href: "/services",
+                title: locale === "cn" ? "服务能力" : "Services",
+                copy:
+                  locale === "cn"
+                    ? "批发、分销、OEM / ODM、企业礼赠与售后支持。"
+                    : "Wholesale, distribution, OEM / ODM, gifting, and product support.",
+              },
+              {
+                href: "/cases",
+                title: locale === "cn" ? "合作场景" : "Cooperation scenarios",
+                copy:
+                  locale === "cn"
+                    ? "了解现有产品如何匹配零售、定制和礼赠需求。"
+                    : "See how current products match retail, customization, and gifting needs.",
+              },
+              {
+                href: "/faq",
+                title: locale === "cn" ? "常见问题" : "FAQ",
+                copy:
+                  locale === "cn"
+                    ? "查看产品、报价、供货、定制和支持的明确回答。"
+                    : "Get clear answers about products, pricing, supply, customization, and support.",
+              },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={withLocale(item.href, locale)}
+                className="group rounded-[12px] border border-black/[0.08] bg-[#fbfbfd] p-6 transition hover:border-[#0071e3]/30 hover:bg-white"
+              >
+                <h3 className="text-xl font-semibold">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-[#6e6e73]">
+                  {item.copy}
+                </p>
+                <span className="mt-6 inline-flex items-center text-sm font-semibold text-[#0071e3]">
+                  {locale === "cn" ? "了解更多" : "Learn more"}
+                  <ChevronRight
+                    size={16}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <ContentSectionList
+        sections={siteContent.home.sections}
+        locale={locale}
+        excludeIds={[
+          "hero-color",
+          "hero-orange",
+          "promo-blue",
+          "promo-pastel",
+          "promo-orange",
+          "promo-rose",
+          "promo-usb",
+          "promo-multi",
+        ]}
+      />
+      <MetricsStrip content={siteContent.home} />
       <SiteFooter />
     </main>
   );

@@ -3,6 +3,7 @@ node_modules
 out
 dist
 build
+.run/
 .env
 .env*
 !.env.example
@@ -12,9 +13,9 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 *.err
-data/*.sqlite
-data/*.sqlite-shm
-data/*.sqlite-wal
+*.tsbuildinfo
+data/
 .DS_Store
 Thumbs.db
-data/backups/
+public/uploads/
+public/products/*.jpg

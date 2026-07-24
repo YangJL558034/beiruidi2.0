@@ -3,9 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { MessageCircle, Music2, Tv, Video } from "lucide-react";
-import { usePathname } from "next/navigation";
 import type { FooterContent } from "@/lib/content-types";
-import { externalHref, getLocaleFromPathname, isExternalHref, isHttpExternalHref, withLocale } from "@/lib/i18n";
+import { externalHref, isExternalHref, isHttpExternalHref, withLocale } from "@/lib/i18n";
+import { useLocale } from "@/components/LocaleProvider";
 import { EditableSection } from "@/components/EditableSection";
 
 type Locale = "cn" | "en";
@@ -55,7 +55,7 @@ function fallbackFooter(locale: Locale): FooterContent {
       { title: "选购与了解", links: [{ label: "产品", href: "/products" }, { label: "USB-C 电源", href: "/products/orange-edition" }, { label: "彩色系列", href: "/products/pastel-stack" }, { label: "支持", href: "/support" }] },
       { title: "服务", links: [{ label: "批发", href: "/contact" }, { label: "OEM 项目", href: "/contact" }, { label: "零售陈列", href: "/products" }, { label: "产品保养", href: "/support" }] },
       { title: "商业合作", links: [{ label: "分销商", href: "/contact" }, { label: "零售商", href: "/contact" }, { label: "企业礼品", href: "/contact" }] },
-      { title: "关于 SZA", links: [{ label: "公司介绍", href: "/about" }, { label: "资讯", href: "/news" }, { label: "联系我们", href: "/contact" }] }
+      { title: "关于 SZA", links: [{ label: "公司介绍", href: "/about" }, { label: "用户评价", href: "/news" }, { label: "联系我们", href: "/contact" }] }
     ]
   };
   return {
@@ -66,17 +66,36 @@ function fallbackFooter(locale: Locale): FooterContent {
       { title: "Shop and learn", links: [{ label: "Products", href: "/products" }, { label: "USB-C Power", href: "/products/orange-edition" }, { label: "Color Series", href: "/products/pastel-stack" }, { label: "Support", href: "/support" }] },
       { title: "Services", links: [{ label: "Wholesale", href: "/contact" }, { label: "OEM Projects", href: "/contact" }, { label: "Retail Display", href: "/products" }, { label: "Product Care", href: "/support" }] },
       { title: "For business", links: [{ label: "Distributors", href: "/contact" }, { label: "Retailers", href: "/contact" }, { label: "Corporate Gifts", href: "/contact" }] },
-      { title: "About SZA", links: [{ label: "Company", href: "/about" }, { label: "News", href: "/news" }, { label: "Contact", href: "/contact" }] }
+      { title: "About SZA", links: [{ label: "Company", href: "/about" }, { label: "Customer reviews", href: "/news" }, { label: "Contact", href: "/contact" }] }
     ]
   };
 }
 
 export function SiteFooter() {
-  const pathname = usePathname();
-  const locale = getLocaleFromPathname(pathname);
+  const locale = useLocale();
   const [loaded, setLoaded] = useState<{ locale: Locale; content: FooterContent } | null>(null);
   const fallback = fallbackFooter(locale);
   const content = loaded?.locale === locale ? loaded.content : fallback;
+  const publicColumns = content.columns.map((column) => ({
+    ...column,
+    links: column.links.filter(
+      (item) => !/^\/(?:cn\/|en\/)?admin(?:\/|$)/.test(item.href),
+    ),
+  }));
+  const directoryLinks = [
+    { label: locale === "cn" ? "产品" : "Products", href: "/products" },
+    { label: locale === "cn" ? "服务" : "Services", href: "/services" },
+    {
+      label: locale === "cn" ? "合作场景" : "Solutions",
+      href: "/cases",
+    },
+    { label: "FAQ", href: "/faq" },
+    {
+      label: locale === "cn" ? "用户评价" : "Customer reviews",
+      href: "/news",
+    },
+    { label: locale === "cn" ? "联系" : "Contact", href: "/contact" },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -90,10 +109,25 @@ export function SiteFooter() {
   return (
     <footer className="relative bg-[#f5f5f7] px-5 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] text-xs leading-5 text-[#6e6e73]">
       <EditableSection footer label={locale === "cn" ? "编辑底部" : "Edit footer"}/>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <p className="break-words border-b border-black/10 pb-5">{content.disclaimer}</p>
+        <nav
+          aria-label={locale === "cn" ? "底部主导航" : "Footer primary navigation"}
+          className="flex flex-wrap gap-x-5 gap-y-2 border-b border-black/10 py-5 text-sm font-semibold text-[#1d1d1f]"
+        >
+          {directoryLinks.map((item) => (
+            <FooterLink
+              key={item.href}
+              href={item.href}
+              locale={locale}
+              className="hover:text-[#0071e3]"
+            >
+              {item.label}
+            </FooterLink>
+          ))}
+        </nav>
         <div className="grid gap-7 border-b border-black/10 py-6 sm:grid-cols-2 lg:grid-cols-4">
-          {content.columns.map((column) => (
+          {publicColumns.map((column) => (
             <div key={column.title}>
               <h2 className="mb-2 font-semibold text-[#1d1d1f]">{column.title}</h2>
               <ul className="grid gap-1">

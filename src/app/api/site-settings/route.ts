@@ -12,6 +12,8 @@ export async function GET() {
     siteLogo: String(settings.siteLogo || ""),
     siteLogoAlt: String(settings.siteLogoAlt || settings.siteName || "SZA POWER"),
     showSiteName: settings.showSiteName !== false,
+    customerLoginImage: String(settings.customerLoginImage || ""),
+    customerRegisterImage: String(settings.customerRegisterImage || ""),
     contactEmail: String(settings.contactEmail || "sales@sza-power.com"),
     contactLocation: String(settings.contactLocation || "International mobile power brand"),
     contactDescription: String(settings.contactDescription || "Product, wholesale, OEM, and support requests"),

@@ -68,7 +68,10 @@ export async function readAdminSession(token: string | null | undefined): Promis
 
     const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encodedPayload))) as SessionPayload;
     if (!payload.email || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= Date.now()) return null;
-    return { ...payload, role: payload.role ?? "owner" };
+    const { getActiveAdminSessionState } = await import("@/lib/db");
+    const current = getActiveAdminSessionState(payload.email);
+    if (!current) return null;
+    return { ...payload, role: current.role };
   } catch {
     return null;
   }

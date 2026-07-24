@@ -22,6 +22,7 @@ export function PageMedia({ media, className = "" }: { media?: PageMediaData; cl
           controlsList="nodownload noplaybackrate nofullscreen"
           aria-label={media.alt || "Page video"}
           className="h-full w-full object-cover"
+          style={{ objectPosition: media.position || "50% 50%" }}
           onContextMenu={(event) => event.preventDefault()}
         />
       </div>
@@ -30,13 +31,13 @@ export function PageMedia({ media, className = "" }: { media?: PageMediaData; cl
   if (isManagedMediaUrl(media.src)) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
-        <img src={media.src} alt={media.alt || "Page image"} loading="lazy" className="h-full w-full object-cover" />
+        <Image unoptimized src={media.src} alt={media.alt || "Page image"} fill sizes="100vw" className="object-cover" style={{ objectPosition: media.position || "50% 50%" }} />
       </div>
     );
   }
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      <Image src={media.src} alt={media.alt || "Page image"} fill sizes="100vw" className="object-cover" />
+      <Image src={media.src} alt={media.alt || "Page image"} fill sizes="100vw" className="object-cover" style={{ objectPosition: media.position || "50% 50%" }} />
     </div>
   );
 }

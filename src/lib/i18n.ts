@@ -8,6 +8,7 @@ export function getLocaleFromPathname(pathname: string | null | undefined): Loca
 
 export function withLocale(href: string, locale: Locale): string {
   if (!href.startsWith("/")) return href;
+  if (/^\/(?:admin|api)(?:\/|$)/.test(href)) return href;
   if (href === `/${locale}` || href.startsWith(`/${locale}/`)) return href;
   if (href === "/cn" || href === "/en") return `/${locale}`;
   if (href.startsWith("/cn/") || href.startsWith("/en/")) return `/${locale}${href.slice(3)}`;
@@ -122,8 +123,8 @@ export const pageText = {
     productsEyebrow: "SZA POWER",
     productsTitle: "Compact power, in every finish.",
     productsSubtitle: "Browse the current mobile power bank family, built around USB-C charging, clean surfaces, and retail-ready colors.",
-    newsEyebrow: "Newsroom",
-    newsTitle: "Product stories and market notes.",
+    newsEyebrow: "Customer reviews",
+    newsTitle: "Trusted by customers and partners.",
     aboutEyebrow: "About SZA POWER",
     aboutTitle: "Making mobile power feel personal.",
     aboutSubtitle: "SZA POWER designs compact power banks for daily charging, retail display, and international distribution.",
@@ -149,8 +150,8 @@ export const pageText = {
     globalMinded: "Global minded",
     globalMindedCopy: "A site and backend prepared for distributors, partners, and overseas buyers.",
     contactSzaPower: "SZA POWER",
-    salesEmail: "sales@sza-power.example",
-    locationText: "International mobile power brand website demo",
+    salesEmail: "sales@sza-power.com",
+    locationText: "International mobile power brand",
     contactDescription: "Product, wholesale, OEM, and support requests",
     color: "Color",
     capacity: "Capacity",
@@ -161,8 +162,8 @@ export const pageText = {
     productsEyebrow: "SZA POWER",
     productsTitle: "每一种配色，都是随身电力。",
     productsSubtitle: "浏览当前移动电源产品系列：USB-C 充电、简洁表面，以及适合零售陈列的高质感色彩。",
-    newsEyebrow: "资讯中心",
-    newsTitle: "产品故事与市场动态。",
+    newsEyebrow: "用户评价",
+    newsTitle: "来自客户与合作伙伴的真实评价。",
     aboutEyebrow: "关于 SZA POWER",
     aboutTitle: "让移动电源成为日常配件。",
     aboutSubtitle: "SZA POWER 设计适合日常充电、零售陈列和国际分销的精致移动电源。",
@@ -188,8 +189,8 @@ export const pageText = {
     globalMinded: "全球视野",
     globalMindedCopy: "为分销商、合作伙伴和海外买家准备的网站与后台系统。",
     contactSzaPower: "SZA POWER",
-    salesEmail: "sales@sza-power.example",
-    locationText: "国际移动电源品牌网站演示",
+    salesEmail: "sales@sza-power.com",
+    locationText: "国际移动电源品牌",
     contactDescription: "产品、批发、OEM 和支持咨询",
     color: "颜色",
     capacity: "容量",

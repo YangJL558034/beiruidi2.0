@@ -5,9 +5,10 @@
 ## 1. 应用与密钥
 
 1. 在服务器创建独立的 `sza-power` 系统用户和应用目录，禁止用 root 运行 Node。
-2. 使用 Node.js LTS，执行 `npm ci`、`npm run build`，再用 systemd 或进程管理器运行 `npm run start`。
+2. 使用 Node.js LTS，执行 `npm ci`、`npm run verify`，再用 systemd 或进程管理器运行 `npm run start`。
 3. 复制 `.env.example` 为生产环境变量文件，至少设置 `SZA_SESSION_SECRET`、`SZA_ADMIN_PASSWORD`、`SZA_TRUSTED_ORIGINS`、`NEXT_PUBLIC_SITE_URL` 和 `SZA_SQLITE_PATH`。密码和会话密钥使用密码管理器保存并定期轮换。
-4. `data/` 和 `data/backups/` 只允许应用用户读写；备份目录禁止被 Nginx 直接映射。
+4. `data/`、`data/backups/` 和 `SZA_SUPPORT_ATTACHMENT_PATH` 只允许应用用户读写；数据库备份会同时保存客服私有附件快照，这些目录禁止被 Nginx 直接映射。
+5. 配置 SMTP 后才能发送客户注册/登录验证码和密码重置邮件；生产环境将 `SZA_REQUIRE_MALWARE_SCAN=true`，并部署 ClamAV `clamd`，扫描不可用时附件上传会自动拒绝。
 
 ## 2. HTTPS 与反向代理
 
@@ -25,8 +26,9 @@
 
 ## 5. 发布前检查
 
-- `npm run lint` 和 `npm run build` 必须通过。
+- 唯一发布验收命令 `npm run verify` 必须通过；它包含代码规范、类型、生产构建和生产冒烟测试。
 - 生产环境首次启动前确认管理员密码已配置；不要使用开发默认密码。
 - 从公网检查 HTTPS、HSTS、CSP、`X-Content-Type-Options` 和 `X-Frame-Options`。
 - 用真实域名验证中英文页面、产品详情、询价提交、后台登录、验证码、角色权限、备份下载和移动端布局。
+- 验证客户注册、二次邮箱验证码登录、聊天实时推送、附件越权下载拦截、主管分配/转接、销售数据隔离、数据导出删除以及数据库与私有附件恢复。
 - 定期更新 Node、Next.js、依赖包和操作系统安全补丁，并在 CI 中运行依赖审计。

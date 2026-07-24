@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminCsrfCookie, adminSessionCookie, readAdminSession, verifyAdminCsrfToken } from "@/lib/auth-session";
+import {
+  adminCsrfCookie,
+  adminSessionCookie,
+  readAdminSession,
+  verifyAdminCsrfToken,
+} from "@/lib/auth-session";
 import { isUnsafeMethod, requestOriginAllowed } from "@/lib/request-security";
+import { canAccessAdminApi } from "@/lib/admin-access";
 
 const localeCookie = "sza_locale";
 
@@ -24,54 +30,96 @@ function detectLocale(request: NextRequest) {
   if (country && country !== "XX") return "en";
   const saved = request.cookies.get(localeCookie)?.value;
   if (isLocale(saved ?? "")) return saved as "cn" | "en";
-  return request.headers.get("accept-language")?.toLowerCase().includes("zh") ? "cn" : "en";
+  return request.headers.get("accept-language")?.toLowerCase().includes("zh")
+    ? "cn"
+    : "en";
 }
 
-function roleCanAccess(role: "owner" | "editor" | "support", pathname: string) {
-  if(role === "owner") return true;
-  if(role === "support") return pathname === "/api/admin/inquiries" || pathname === "/api/admin/monitoring";
-  return pathname === "/api/admin/products" || pathname === "/api/admin/posts" || pathname === "/api/admin/site-content" || pathname === "/api/admin/inquiries" || pathname === "/api/admin/monitoring";
-}
 function isPublicFile(pathname: string) {
   return /\.[a-zA-Z0-9]+$/.test(pathname);
 }
 
-function withLocaleHeader(request: NextRequest, locale: "cn" | "en", pathname: string) {
+function withLocaleHeader(
+  request: NextRequest,
+  locale: "cn" | "en",
+  pathname: string,
+) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-sza-locale", locale);
   const url = request.nextUrl.clone();
   url.pathname = pathname;
-  const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
-  response.cookies.set(localeCookie, locale, { sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 180 });
+  const response = NextResponse.rewrite(url, {
+    request: { headers: requestHeaders },
+  });
+  response.cookies.set(localeCookie, locale, {
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 180,
+  });
   return response;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname.startsWith("/_next") || isPublicFile(pathname)) return NextResponse.next();
+  if (pathname.startsWith("/_next") || isPublicFile(pathname))
+    return NextResponse.next();
 
-  const session = await readAdminSession(request.cookies.get(adminSessionCookie)?.value);
-  const hasSession = Boolean(session);
-  const isLogin = pathname === "/admin/login";
-  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/forgot-password" || pathname === "/admin/reset-password";
-  const isAdminPage = pathname.startsWith("/admin") && !isAuthPage;
-  const isAdminApi = pathname.startsWith("/api/admin");
-  const unsafe = isUnsafeMethod(request.method);
-
-  if (unsafe && (isAdminApi || pathname.startsWith("/api/auth")) && !requestOriginAllowed(request)) {
-    return NextResponse.json({ error: "Request origin validation failed." }, { status: 403 });
+  const localizedSystemPath = pathname.match(/^\/(?:cn|en)(\/(?:admin|api)(?:\/.*)?|\/(?:admin|api))$/);
+  if (localizedSystemPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = localizedSystemPath[1];
+    return NextResponse.redirect(url);
   }
 
-  if (isAdminApi && hasSession && !roleCanAccess(session?.role ?? "owner", pathname)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+  const session = await readAdminSession(
+    request.cookies.get(adminSessionCookie)?.value,
+  );
+  const hasSession = Boolean(session);
+  const isLogin = pathname === "/admin/login";
+  const isAuthPage =
+    pathname === "/admin/login" ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password";
+  const isAdminPage = pathname.startsWith("/admin") && !isAuthPage;
+  const isAdminApi = pathname.startsWith("/api/admin");
+  const isCustomerApi = pathname.startsWith("/api/customer");
+  const unsafe = isUnsafeMethod(request.method);
+
+  if (
+    unsafe &&
+    (isAdminApi || isCustomerApi || pathname.startsWith("/api/auth")) &&
+    !requestOriginAllowed(request)
+  ) {
+    return NextResponse.json(
+      { error: "Request origin validation failed." },
+      { status: 403 },
+    );
+  }
+
+  if (
+    isAdminApi &&
+    hasSession &&
+    !canAccessAdminApi(session?.role ?? "owner", pathname)
+  )
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
 
   if (unsafe && (isAdminApi || pathname === "/api/auth/logout") && hasSession) {
-    const sessionToken=request.cookies.get(adminSessionCookie)?.value;
-    const csrfValid=await verifyAdminCsrfToken(sessionToken,request.cookies.get(adminCsrfCookie)?.value,request.headers.get("x-sza-csrf"));
-    if(!csrfValid) return NextResponse.json({error:"CSRF validation failed."},{status:403});
+    const sessionToken = request.cookies.get(adminSessionCookie)?.value;
+    const csrfValid = await verifyAdminCsrfToken(
+      sessionToken,
+      request.cookies.get(adminCsrfCookie)?.value,
+      request.headers.get("x-sza-csrf"),
+    );
+    if (!csrfValid)
+      return NextResponse.json(
+        { error: "CSRF validation failed." },
+        { status: 403 },
+      );
   }
 
   if ((isAdminPage || isAdminApi) && !hasSession) {
-    if (isAdminApi) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (isAdminApi)
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.searchParams.set("next", pathname);
@@ -85,14 +133,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (pathname.startsWith("/api") || pathname.startsWith("/admin")) return NextResponse.next();
+  if (pathname.startsWith("/api") || pathname.startsWith("/admin"))
+    return NextResponse.next();
 
   const rewrittenLocale = request.headers.get("x-sza-locale");
   if (isLocale(rewrittenLocale ?? "")) return NextResponse.next();
 
   const firstSegment = pathname.split("/")[1];
   if (isLocale(firstSegment)) {
-    const withoutLocale = pathname === `/${firstSegment}` ? "/" : pathname.slice(firstSegment.length + 1);
+    const withoutLocale =
+      pathname === `/${firstSegment}`
+        ? "/"
+        : pathname.slice(firstSegment.length + 1);
     return withLocaleHeader(request, firstSegment, withoutLocale);
   }
 

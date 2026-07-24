@@ -6,6 +6,10 @@ export type NavLink = {
 
 export type Locale = "en" | "cn";
 
+export function parseLocale(value: string | null | undefined): Locale {
+  return value === "cn" ? "cn" : "en";
+}
+
 export type NavColumn = {
   eyebrow: string;
   links: NavLink[];
@@ -405,3 +409,106 @@ export const defaultNavigationByLocale: Record<Locale, NavigationConfig> = {
 };
 
 export const defaultNavigation = defaultNavigationEn;
+
+export function withIndustryNavigation(
+  navigation: NavigationConfig,
+  locale: Locale,
+): NavigationConfig {
+  const serviceItem: NavigationItem = {
+    id: "services",
+    label: locale === "cn" ? "服务" : "Services",
+    href: "/services",
+    columns: [
+      {
+        eyebrow: locale === "cn" ? "商业服务" : "Business services",
+        links: [
+          {
+            label: locale === "cn" ? "全部服务" : "All services",
+            href: "/services",
+            featured: true,
+          },
+          {
+            label: locale === "cn" ? "批发与分销" : "Wholesale and distribution",
+            href: "/services#distribution",
+            featured: true,
+          },
+          {
+            label: locale === "cn" ? "OEM / ODM" : "OEM / ODM",
+            href: "/services#oem",
+            featured: true,
+          },
+          {
+            label: locale === "cn" ? "企业礼赠" : "Corporate gifting",
+            href: "/services#gifting",
+            featured: false,
+          },
+        ],
+      },
+      {
+        eyebrow: locale === "cn" ? "决策支持" : "Decision support",
+        links: [
+          {
+            label: locale === "cn" ? "合作场景" : "Cooperation scenarios",
+            href: "/cases",
+          },
+          { label: "FAQ", href: "/faq" },
+          {
+            label: locale === "cn" ? "提交询盘" : "Send an inquiry",
+            href: "/contact",
+          },
+        ],
+      },
+    ],
+  };
+  const casesItem: NavigationItem = {
+    id: "cases",
+    label: locale === "cn" ? "合作场景" : "Solutions",
+    href: "/cases",
+    columns: [],
+  };
+  const existingIds = new Set(navigation.items.map((item) => item.id));
+  const items = [...navigation.items];
+  const productIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === "products"),
+  );
+  let insertAt = productIndex + 1;
+  if (!existingIds.has("services")) {
+    items.splice(insertAt, 0, serviceItem);
+    insertAt += 1;
+  }
+  if (!existingIds.has("cases")) items.splice(insertAt, 0, casesItem);
+
+  return {
+    ...navigation,
+    items: items.map((item) => {
+      if (item.id === "news") {
+        return {
+          ...item,
+          label: locale === "cn" ? "用户评价" : "Reviews",
+          columns: [],
+        };
+      }
+      if (item.id !== "support" || !item.columns.length) return item;
+      const first = item.columns[0];
+      if (first.links.some((link) => link.href === "/faq")) return item;
+      return {
+        ...item,
+        columns: [
+          {
+            ...first,
+            links: [
+              ...first.links,
+              {
+                label: locale === "cn" ? "常见问题" : "FAQ",
+                href: "/faq",
+                featured: true,
+              },
+            ],
+          },
+          ...item.columns.slice(1),
+        ],
+      };
+    }),
+  };
+}
